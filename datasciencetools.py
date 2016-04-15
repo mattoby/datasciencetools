@@ -103,7 +103,7 @@ def heatmap_with_separated_colorbar(mat, rownames, colnames, xlabel=[], ylabel=[
 #    sns.set(style="darkgrid", color_codes=True, font_scale=1.5)
 
 
-def heatmap(mat, rownames, colnames, xlabel=[], ylabel=[], figsize=(10,10)):
+def heatmap(mat, rownames=[], colnames=[], xlabel=[], ylabel=[], figsize=(10,10)):
     '''
     Builds an imshow of any matrix, with label names
     mat = np.ndarray (2d matrix)
@@ -121,8 +121,10 @@ def heatmap(mat, rownames, colnames, xlabel=[], ylabel=[], figsize=(10,10)):
     im = plt.imshow(mat, interpolation='nearest')
 
     # ticks and labels
-    plt.yticks(range(len(rownames)),rownames)
-    plt.xticks(range(len(colnames)),colnames, rotation='vertical')
+    if len(rownames) > 0:
+        plt.yticks(range(len(rownames)),rownames)
+    if len(colnames) > 0:
+        plt.xticks(range(len(colnames)),colnames, rotation='vertical')
     if len(xlabel) > 0:
         plt.xlabel(xlabel)
     if len(ylabel) > 0:
@@ -447,11 +449,17 @@ def plot_feature_importances(X_names, importances, Nfeatures=100):
 #        fnames = X_names
     fnames = X_names
 
+    # convert fnames type if needed
+    if fnames.__class__ ==list:
+        fnames = np.array(fnames)
+
     # optionally, take only the top features:
     indices = np.argsort(importances)#[::-1]
+    print len(indices)
     if Nfeatures < len(indices):
         indices = indices[-Nfeatures:]
 
+#    print fnames
     fnames_plot = fnames[indices]
     imps_plot = importances[indices]
 
@@ -609,6 +617,47 @@ def plot_roc_curves_with_mean(y_trues, y_pred_probas):
 #############################
 ## Miscellaneous functions ##
 #############################
+
+
+# Transform String to Integer Variables
+def transform_string_cols_to_int_variables(df, cols_to_integerize):
+
+#    to_integerize = ['Gender','Sex','Marital Status','Party Affiliation','Race']
+    check = pd.DataFrame()
+    mappings = {}
+    for col in cols_to_integerize:
+        keys = df[col].unique()
+        values =  range(len(keys))
+        mapping = {k: v for k, v in zip(keys, values)}
+        df[col] = df[col].map(lambda s: mapping.get(s) if s in mapping else s)
+        mappings[col] = mapping
+
+    return df, mappings
+
+
+def unique_vals(df, nvalscutoff=50):
+    '''
+    Print the unique values of columns in df, if they have less
+    than nvalscutoff unique vals.
+
+    inputs:
+    df = a dataframe
+    nvalscutoff = the max # of unique vals that is accepted for
+    printing the column in unq
+
+    output:
+    unq (a dataframe)
+    '''
+
+    print 'total columns in df:', len(df)
+    cols = [col for col in df.columns if len(df[col].unique())<=nvalscutoff]
+
+    uniquevals = [np.sort(df[col].unique()) for col in cols]
+    numnans = [len(df) - df[col].count() for col in cols]
+    unq = pd.DataFrame({'col':cols, 'uniquevals':uniquevals, 'numnans':numnans})
+
+    return unq
+
 
 def convert_boolean_col_to_int(df, col):
     '''
@@ -813,6 +862,39 @@ def check_for_string_in_dfcol(df, col):
 
 #     ledger.loc[:,'hour_period'] = np.vectorize(lambda h, p: 'h' + str(h) + '_' + str(p))(ledger['hour'], ledger['period'])
 
+
+##################
+# Other/unneeded #
+##################
+
+def df_to_na_mask(df):
+    '''
+    Create 'mask' matrix that denotes positions of all missing
+    values in a dataframe.
+    '''
+
+    # break df into values and colnames:
+    colnames = df.columns
+    na_mat = df.values
+    na_mask = pd.isnull(df)
+
+#    # initiate the mask matrix:
+#    na_mask = np.ones(na_mat.shape)*np.nan
+#
+#    # assign values to mask:
+#    Nrows = na_mat.shape[0]
+#    Ncols = na_mat.shape[1]
+#    for row in range(Nrows):
+#        for col in range(Ncols):
+#            print na_mat[row, col]
+#            if pd.isnull(na_mat[row, col]):
+#                na_mask[row, col] = 1
+#            else:
+#                na_mask[row, col] = 0
+#
+#    assert sum(np.isnan(na_mask))==0, 'Not all values assigned'
+#
+    return na_mask, colnames
 
 
 
