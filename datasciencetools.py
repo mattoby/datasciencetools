@@ -455,7 +455,7 @@ def plot_feature_importances(X_names, importances, Nfeatures=100):
 
     # optionally, take only the top features:
     indices = np.argsort(importances)#[::-1]
-    print len(indices)
+#    print len(indices)
     if Nfeatures < len(indices):
         indices = indices[-Nfeatures:]
 
@@ -861,6 +861,36 @@ def check_for_string_in_dfcol(df, col):
 
 
 #     ledger.loc[:,'hour_period'] = np.vectorize(lambda h, p: 'h' + str(h) + '_' + str(p))(ledger['hour'], ledger['period'])
+
+
+def add_binary_cutoff_col(df, col, bincol, cutoff=nan):
+    '''
+    Adds a new column to df which is a binary label on col, with
+    the binary values determined by cutoff. If a cutoff is not
+    given, it will be taken as the mean of the original col.
+
+    df: a dataframe
+    col: column name in the dataframe to be binarized.
+    bincol: name of the new binarized column to be added.
+    cutoff: the cutoff in column col for determining what will be
+    1 and what 0 in bincol.
+
+    e.g., if cutoff = 2:
+    col bincol
+    1   0
+    2   0
+    3   1
+    4   1
+    '''
+
+    if pd.isnull(cutoff):
+        cutoff = np.mean(df[col])
+
+    df[bincol] = nan
+    df.loc[df[col]<=cutoff, bincol] = 0
+    df.loc[df[col]>cutoff, bincol] = 1
+
+    return df
 
 
 ##################
