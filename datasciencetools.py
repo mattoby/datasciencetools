@@ -927,4 +927,35 @@ def df_to_na_mask(df):
     return na_mask, colnames
 
 
+###################
+# Reading in data #
+###################
+
+# In case of unicode in column names:
+def strip_non_ascii(string):
+    '''
+    Returns the string without non ASCII characters
+    '''
+    stripped = (c for c in string if 0 < ord(c) < 127)
+    return ''.join(stripped)
+
+def strip_non_ascii_from_colnames(df):
+    '''
+    Strip non-ascii from column names. this was a problem in outputs from microsoft sql server, which had non-ascii characters hidden in the first column name, which were messing up input of the data.
+    '''
+    df.columns = [strip_non_ascii(x) for x in df.columns]
+    return df
+
+
+
+
+
+
+
+
+
+
+
+
+
 
