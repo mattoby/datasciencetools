@@ -931,7 +931,8 @@ def df_to_na_mask(df):
 # Reading in data #
 ###################
 
-# In case of unicode in column names:
+# In case of unicode in column names
+# from http://stackoverflow.com/questions/28535067/unable-to-remove-unicode-char-from-column-names-in-pandas
 def strip_non_ascii(string):
     '''
     Returns the string without non ASCII characters
