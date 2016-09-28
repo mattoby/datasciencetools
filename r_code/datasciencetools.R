@@ -85,8 +85,8 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
 
 
 
-
-
+# for date difference: dt <- max(df[,'DisDate']) - min(df[,'DisDate'])
+# #nbins <- as.integer(ceiling(difftime(max(df[,'DisDate']), min(df[,'DisDate']), units="weeks"))) to set bins as weeks
 #df.ranksum(df, valcol, splitcol, ...)
 
 #df.ranksum <- function(df, valcol, splitcol){
