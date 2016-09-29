@@ -16,7 +16,7 @@ zctaShapeLoc = 'G:/CISS-West/Value Institute/Users/Matthew/US_zcta_codes/2015/cb
 
 # tools to do mapping, etc.
 
-def zcta_geographies(zctaShapeLoc=zctaShapeLoc, goodcoords=[], zipform='str'):
+def zcta_geographies(zctaShapeLoc=zctaShapeLoc, goodcoords=[], zctaform='str'):
     '''
     Defines the geographies of zip code tabulation areas (zcta's)
     in the united states.
@@ -58,7 +58,7 @@ def zcta_geographies(zctaShapeLoc=zctaShapeLoc, goodcoords=[], zipform='str'):
             zctashapes.append(zctashape)
 
     # modify output if needed:
-    if zipform == 'np.int':
+    if zctaform == 'np.int':
         zctacodes = [np.int64(code) for code in zctacodes]
 
     return zctacodes, zctashapes
@@ -86,6 +86,25 @@ def distance_haversine(lon1, lat1, lon2, lat2):
     return d
 
 
+def shape_centers(shapenames, shapefiles):
+    # Get the (approx) centers of the shapes:
+    centers_long = []
+    centers_lat = []
+    for shape in shapefiles:
+        center_long = np.mean([shape.bbox[0], shape.bbox[2]])
+        center_lat = np.mean([shape.bbox[1], shape.bbox[3]])
+
+        centers_long.append(center_long)
+        centers_lat.append(center_lat)
+
+    # create df of the shape centers:
+    df_shapecenters = pd.DataFrame({'longitude':centers_long,
+                                  'latitude':centers_lat})
+    df_shapecenters.index = shapenames
+
+    return df_shapecenters
+
+
 def build_geodist_matrix(shapenames, shapefiles, distmetric='haversine'):
     '''
     Build a distance matrix from the center of each shape
@@ -108,20 +127,7 @@ def build_geodist_matrix(shapenames, shapefiles, distmetric='haversine'):
     # check that shapenames are unique:
     assert len(shapenames)==len(np.unique(shapenames)), 'shapenames must be unique'
 
-    # Get the (approx) centers of the shapes:
-    centers_long = []
-    centers_lat = []
-    for shape in shapefiles:
-        center_long = np.mean([shape.bbox[0], shape.bbox[2]])
-        center_lat = np.mean([shape.bbox[1], shape.bbox[3]])
-
-        centers_long.append(center_long)
-        centers_lat.append(center_lat)
-
-    # create df of the shape centers:
-    df_shapecenters = pd.DataFrame({'longitude':centers_long,
-                                  'latitude':centers_lat})
-    df_shapecenters.index = shapenames
+    df_shapecenters = shape_centers(shapefiles)
 
     # build shape distances matrix:
     mat_geodists = np.zeros((len(shapenames),len(shapenames)))
@@ -148,7 +154,7 @@ def build_geodist_matrix(shapenames, shapefiles, distmetric='haversine'):
     return df_shapecenters, mat_geodists
 
 
-def zctas_within_radius(lat, long, radius, zctacodes, zctashapes, includeRule='inclusive', ):
+def zctas_within_radius(Clat, Clong, radius, zctacodes, zctashapes, df_shapecenters=[], includeRule='inclusive'):
     '''
     lat = latitude at the center
     long = longitude at center
@@ -156,11 +162,23 @@ def zctas_within_radius(lat, long, radius, zctacodes, zctashapes, includeRule='i
     includeRule = what to do with zctas on the border
     '''
 
+    # create df_shapecenters if needed
+    if len(df_shapecenters) == 0:
+        df_shapecenters = shape_centers(zctacodes, zctashapes)
+
     # simple inclusion rule:
+    included_zctas = []
+    for zcta in df_shapecenters.index:
+        Zlat = np.float64(df_shapecenters.loc[[zcta]]['latitude'])
+        Zlong = np.float64(df_shapecenters.loc[[zcta]]['longitude'])
 
+        dist = distance_haversine(Clong, Clat, Zlong, Zlat)
 
+        if dist <= radius:
+            included_zctas.append(zcta)
 
-    pass
+    return included_zctas
+
 
 ### experimental: trying to draw zip codes (see leadtools.py)
 
@@ -201,6 +219,36 @@ def draw_zips(zctashapes):
     return ax
 
 
+def draw_zipcenters(zctacodes, zctashapes, dfl, colorcol='', gamma=1.0):
+    '''
+    Needs to be vetted..
+    '''
+    dfl_zctashapes, dfl_zctacenters, dfl_cities = \
+        zctas_for_dfl(zctacodes, zctashapes, dfl)
+
+    # set style:
+    sns.set(style="white", color_codes=True, font_scale=1.5)
+#    sns.color_palette("Blues")
+
+    # plot:
+#    plt.figure()
+
+    # determine what column to color by:
+    if len(colorcol)>0:
+        c = dfl[colorcol].copy()#**gamma
+        plt.scatter(dfl_zctacenters['longitude'],\
+                    dfl_zctacenters['latitude'],c=c, norm=colors.PowerNorm(gamma=gamma), cmap='Reds')
+    else:
+        plt.scatter(dfl_zctacenters['longitude'],\
+                    dfl_zctacenters['latitude'])
+
+    plt.colorbar()
+#    plt.show()
+
+    # return to default (this is a hack..)
+    sns.set(style="darkgrid", color_codes=True, font_scale=1.5)
+
+    return dfl_zctashapes, dfl_zctacenters
 
 
 
