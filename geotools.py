@@ -63,7 +63,7 @@ def zcta_geographies(zctaShapeLoc=zctaShapeLoc, goodcoords=[], zctaform='str'):
 
     return zctacodes, zctashapes
 
-
+#
 def distance_haversine(lon1, lat1, lon2, lat2):
     '''
     Haversine formula, to calc distance given 2 points'
